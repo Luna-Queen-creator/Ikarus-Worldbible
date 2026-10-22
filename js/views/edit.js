@@ -2,7 +2,7 @@
 import { h, iconEl, imgFor, toast, confirmSheet, openSheet, isAuthor, fmt, ICON, navState } from '../ui.js';
 import {
   state, byId, byName, newEntry, saveEntry, addImage, deleteBlob, meterDefs, meterValues, formulaText,
-  toEditable, fromEditable, entriesWhere,
+  toEditable, fromEditable, entriesWhere, canHaveMembers,
 } from '../model.js';
 import { linkEditor, hide as hideSuggest } from '../editor.js';
 import { setTitle, takePrefill, noun, empty } from './parts.js';
@@ -13,13 +13,15 @@ function makeNew({ kind, a, b }) {
   if (kind === 'being') {
     const f = byId(S.factions, a) || S.factions[0];
     const t = byId(f.types, b) || f.types[0];
-    const e = newEntry('being', { faction: f.id, type: t ? t.id : null, name });
+    const e = newEntry('being', { faction: f.id, type: t ? t.id : null, name, groups: [] });
     if (f.id === 'kaiju') Object.assign(e, { family: null, kclass: null, elements: [], sin: null });
     if (f.id === 'humans') Object.assign(e, { village: null, rank: t && t.id === 'slayer' ? (S.ranks[0]?.id || null) : null, mutations: [], tamer: false });
     if (f.id === 'ai') e.parentAi = null;
     return e;
   }
   if (kind === 'place') return newEntry('place', { placeType: (byId(S.placeTypes, a) || S.placeTypes[0])?.id || null, name });
+  if (kind === 'lore') return newEntry('lore', { category: (byId(S.loreCategories, a) || S.loreCategories[0])?.id || null, name });
+  if (kind === 'item') return newEntry('item', { itemType: (byId(S.itemTypes, a) || S.itemTypes[0])?.id || null, owner: null, name });
   if (kind === 'event') return newEntry('event', { era: (byId(S.eras, a) || S.eras[S.eras.length - 1])?.id || null, year: null, when: '', truth: '', name });
   return newEntry('story', { era: null, name });
 }
@@ -175,6 +177,14 @@ export function renderEdit(main, params) {
     if (draft.kind === 'place') {
       out.push(field('Type of place', 'f-ptype', select('f-ptype', S.placeTypes, draft.placeType, (v) => { draft.placeType = v; })));
     }
+    if (draft.kind === 'lore') {
+      out.push(field('Category', 'f-cat', select('f-cat', S.loreCategories, draft.category, (v) => { draft.category = v; }),
+        'People and creatures can join a group from their own edit page.'));
+    }
+    if (draft.kind === 'item') {
+      out.push(field('Type of item', 'f-itype', select('f-itype', S.itemTypes, draft.itemType, (v) => { draft.itemType = v; })));
+      out.push(field('Owner', 'f-owner', ownerSelect(), 'The item shows up as gear on its owner’s page.'));
+    }
     if (draft.kind === 'event') {
       out.push(field('Era', 'f-era', select('f-era', S.eras, draft.era, (v) => { draft.era = v; }, { none: 'No era' })));
       out.push(h('div', { class: 'two' },
@@ -194,7 +204,7 @@ export function renderEdit(main, params) {
     if (draft.kind === 'being') out.push(metersSection());
     out.push(imagesSection());
 
-    const bodyLabel = { being: 'Description', place: 'Description', event: 'What people believe', story: 'Story' }[draft.kind];
+    const bodyLabel = { event: 'What people believe', story: 'Story' }[draft.kind] || 'Description';
     out.push(textField(bodyLabel, 'body', draft.kind === 'story' ? 16 : 8));
     if (draft.kind === 'event') {
       if (author) out.push(textField('What really happened', 'truth', 6, true));
@@ -241,7 +251,47 @@ export function renderEdit(main, params) {
       const ais = entriesWhere((x) => x.kind === 'being' && x.type === 'ai').sort(byName);
       out.push(field('Belongs to', 'f-parent', select('f-parent', ais, draft.parentAi, (v) => { draft.parentAi = v; }, { none: ais.length ? 'No AI' : 'No AI entries yet' })));
     }
+    const groupsField = membershipField();
+    if (groupsField) out.push(groupsField);
     return out;
+  }
+
+  // Groups from the Lore tab (like a religion or a slayer faction) this being belongs to.
+  function membershipField() {
+    const groups = entriesWhere((x) => canHaveMembers(x)).sort(byName);
+    if (!groups.length) return null;
+    const mine = draft.groups || (draft.groups = []);
+    const wrap = h('div', { class: 'toggles', role: 'group', 'aria-labelledby': 'lbl-groups' });
+    for (const g of groups) {
+      const on = mine.includes(g.id);
+      wrap.append(h('button', {
+        type: 'button', class: 'toggle' + (on ? ' on' : ''), 'aria-pressed': String(on),
+        onclick: (ev) => {
+          const i = mine.indexOf(g.id);
+          if (i >= 0) mine.splice(i, 1); else mine.push(g.id);
+          const b = ev.currentTarget;
+          b.classList.toggle('on', i < 0);
+          b.setAttribute('aria-pressed', String(i < 0));
+          touch();
+        },
+      }, g.name || 'Untitled'));
+    }
+    return h('div', { class: 'field' }, h('span', { class: 'fl', id: 'lbl-groups' }, 'Member of'), wrap,
+      h('p', { class: 'hint' }, 'Groups come from the Lore tab.'));
+  }
+
+  function ownerSelect() {
+    const sel = h('select', { class: 'in', id: 'f-owner' });
+    sel.append(h('option', { value: '' }, 'No owner'));
+    for (const f of S.factions) {
+      const beings = entriesWhere((x) => x.kind === 'being' && x.faction === f.id).sort(byName);
+      if (!beings.length) continue;
+      const g = h('optgroup', { label: f.name });
+      for (const b of beings) g.append(h('option', { value: b.id, selected: b.id === draft.owner }, b.name || 'Untitled'));
+      sel.append(g);
+    }
+    sel.addEventListener('change', () => { draft.owner = sel.value || null; touch(); });
+    return sel;
   }
 
   function elementsField() {

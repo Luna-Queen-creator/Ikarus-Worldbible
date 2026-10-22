@@ -1,6 +1,6 @@
 // Archive service worker: keeps the whole app available offline.
 // When you upload a new version of the app, change VERSION so phones fetch the new files.
-const VERSION = 'archive-v1';
+const VERSION = 'archive-v2';
 const FONT_CACHE = 'archive-fonts';
 const SHELL = [
   './',
@@ -17,6 +17,7 @@ const SHELL = [
   './js/views/entry.js',
   './js/views/factions.js',
   './js/views/lists.js',
+  './js/views/lore.js',
   './js/views/map.js',
   './js/views/parts.js',
   './js/views/search.js',

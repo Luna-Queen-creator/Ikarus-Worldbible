@@ -50,6 +50,14 @@ export const DEFAULT_SETTINGS = {
   sins: named(['Pride', 'Greed', 'Lust', 'Envy', 'Gluttony', 'Wrath', 'Sloth']),
   placeTypes: named(['Village', 'Lair', 'Region', 'Ruin', 'Other']),
   eras: named(['Ancient era', 'The Uprising', 'Present day']),
+  // Lore: anything that isn't a being, place or event. Categories with members can be joined by beings.
+  loreCategories: [
+    { id: 'group', name: 'Group', members: true },
+    { id: 'technology', name: 'Technology', members: false },
+    { id: 'concept', name: 'Concept', members: false },
+    { id: 'other', name: 'Other', members: false },
+  ],
+  itemTypes: named(['Weapon', 'Armor', 'Tool', 'Other']),
   meters: {
     kaiju: [
       meter('toughness', 'Toughness'),
@@ -107,10 +115,12 @@ export async function load() {
     db.getAll('entries'), db.get('meta', 'settings'), db.get('meta', 'map'), db.get('meta', 'backup'),
   ]);
   state.entries = new Map(entries.map((e) => [e.id, e]));
+  const before = s ? JSON.stringify(s.value) : '';
   state.settings = migrate(s ? s.value : null);
   state.map = mp ? mp.value : emptyMap();
   state.backup = bk ? bk.value : { lastAt: null };
-  if (!s) await saveSettings();
+  // Save right away when this is the first start or an update added new settings.
+  if (JSON.stringify(state.settings) !== before) await saveSettings();
   rebuildIndex();
 }
 
@@ -132,6 +142,8 @@ export const typeOf = (factionId, typeId) => byId(factionOf(factionId)?.types, t
 export function typeName(e) {
   if (e.kind === 'being') return typeOf(e.faction, e.type)?.name || 'Being';
   if (e.kind === 'place') return byId(state.settings.placeTypes, e.placeType)?.name || 'Place';
+  if (e.kind === 'lore') return byId(state.settings.loreCategories, e.category)?.name || 'Lore';
+  if (e.kind === 'item') return byId(state.settings.itemTypes, e.itemType)?.name || 'Item';
   if (e.kind === 'event') return 'Event';
   if (e.kind === 'story') return 'Story';
   return '';
@@ -139,11 +151,17 @@ export function typeName(e) {
 
 // Short label for the kind of entry, used in menus and search results.
 export function kindNoun(e) {
-  if (e.kind === 'being') return typeName(e);
-  if (e.kind === 'place') return typeName(e);
   if (e.kind === 'event') return 'Event';
-  return 'Story';
+  if (e.kind === 'story') return 'Story';
+  return typeName(e);
 }
+
+// Lore entries that beings can be members of, like religions and slayer factions.
+export function canHaveMembers(e) {
+  return !!e && e.kind === 'lore' && !!byId(state.settings.loreCategories, e.category)?.members;
+}
+
+export const membersOf = (id) => entriesWhere((x) => x.kind === 'being' && (x.groups || []).includes(id));
 
 export function classIndex(e) {
   const i = state.settings.classes.findIndex((c) => c.id === e.kclass);
@@ -284,7 +302,7 @@ export function splitTokens(text) {
 
 export function findByName(name, excludeId) {
   const k = name.trim().toLowerCase();
-  const order = { being: 0, place: 1, event: 2, story: 3 };
+  const order = { being: 0, place: 1, lore: 2, item: 3, event: 4, story: 5 };
   let best = null;
   for (const e of state.entries.values()) {
     if (e.id === excludeId) continue;
@@ -400,6 +418,8 @@ export async function deleteEntry(id) {
     }
     if (o.village === id) { o.village = null; dirty = true; }
     if (o.parentAi === id) { o.parentAi = null; dirty = true; }
+    if (o.owner === id) { o.owner = null; dirty = true; }
+    if (o.groups && o.groups.includes(id)) { o.groups = o.groups.filter((g) => g !== id); dirty = true; }
     if (dirty) changed.push(o);
   }
   let mapDirty = false;
@@ -545,7 +565,7 @@ export async function exportBackup() {
   };
 }
 
-const KINDS = ['being', 'place', 'event', 'story'];
+const KINDS = ['being', 'place', 'lore', 'item', 'event', 'story'];
 
 export function validBackup(obj) {
   if (!obj || obj.app !== 'archive' || !Array.isArray(obj.entries)) return false;

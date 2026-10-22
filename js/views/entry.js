@@ -2,13 +2,15 @@
 import { h, iconEl, imgFor, openSheet, confirmSheet, toast, fmt, isAuthor } from '../ui.js';
 import {
   state, byId, byName, typeName, factorOf, scaleLabel, meterValues, meterDefs, meterMax, formulaText,
-  backlinksOf, linkIds, deleteEntry, entriesWhere,
+  backlinksOf, linkIds, deleteEntry, entriesWhere, canHaveMembers, membersOf,
 } from '../model.js';
 import { setTitle, glyph, classChip, elementChips, rankChip, row, richText, empty, linkButton } from './parts.js';
 
 export function sectionHref(e) {
   if (e.kind === 'being') return `#/factions/${e.faction}`;
   if (e.kind === 'place') return '#/places';
+  if (e.kind === 'lore') return '#/lore/topics';
+  if (e.kind === 'item') return '#/lore/items';
   if (e.kind === 'event') return '#/history';
   return '#/stories';
 }
@@ -16,6 +18,8 @@ export function sectionHref(e) {
 function titleFor(e) {
   if (e.kind === 'being') return state.settings.factions.find((f) => f.id === e.faction)?.name || 'Entry';
   if (e.kind === 'place') return 'Place';
+  if (e.kind === 'lore') return 'Lore';
+  if (e.kind === 'item') return 'Item';
   if (e.kind === 'event') return 'History';
   return 'Story';
 }
@@ -62,7 +66,7 @@ export function renderEntry(main, { id }) {
       if (rc) chips.push(rc);
     } else chips.push(h('span', { class: 'chip quiet' }, typeName(e)));
     if (e.tamer && author) chips.push(h('span', { class: 'chip secret' }, 'Tamer'));
-  } else if (e.kind === 'place') chips.push(h('span', { class: 'chip quiet' }, typeName(e)));
+  } else if (e.kind === 'place' || e.kind === 'lore' || e.kind === 'item') chips.push(h('span', { class: 'chip quiet' }, typeName(e)));
   else {
     const era = byId(S.eras, e.era);
     if (era) chips.push(h('span', { class: 'chip quiet' }, era.name));
@@ -114,6 +118,14 @@ export function renderEntry(main, { id }) {
     }
   }
   if (e.kind === 'being' && !['kaiju', 'humans', 'ai'].includes(e.faction)) fact('Type', typeName(e));
+  if (e.kind === 'being') {
+    const groups = (e.groups || []).map((g) => state.entries.get(g)).filter(canHaveMembers).sort(byName);
+    if (groups.length) fact('Member of', groups.flatMap((g, i) => (i ? [', ', linkButton(g)] : [linkButton(g)])));
+  }
+  if (e.kind === 'item') {
+    const owner = state.entries.get(e.owner);
+    if (owner) fact('Owner', linkButton(owner));
+  }
   if (e.kind === 'event' && e.year != null && e.year !== '') fact('Year', String(e.year).replace('-', '−'));
   if (facts.length) art.append(h('dl', { class: 'facts' }, facts));
 
@@ -152,6 +164,21 @@ export function renderEntry(main, { id }) {
   if (e.kind === 'being' && e.type === 'ai') {
     const kids = entriesWhere((x) => x.kind === 'being' && x.parentAi === e.id).sort(byName);
     if (kids.length) art.append(h('section', { class: 'sec' }, h('h2', { class: 'sec-t' }, `Serving ${e.name}`), h('div', { class: 'list' }, kids.map((p) => row(p)))));
+  }
+  if (canHaveMembers(e)) {
+    const members = membersOf(e.id).sort(byName);
+    art.append(h('section', { class: 'sec' },
+      h('h2', { class: 'sec-t' }, members.length ? `Members (${members.length})` : 'Members'),
+      members.length
+        ? h('div', { class: 'list' }, members.map((m) => row(m)))
+        : h('p', { class: 'hint' }, 'No members yet. Open someone’s edit page and pick this under “Member of”.')));
+  }
+  if (e.kind === 'being') {
+    const gear = entriesWhere((x) => x.kind === 'item' && x.owner === e.id).sort(byName);
+    if (gear.length) {
+      art.append(h('section', { class: 'sec' }, h('h2', { class: 'sec-t' }, 'Gear'),
+        h('div', { class: 'list' }, gear.map((g) => row(g, [h('span', { class: 'chip quiet' }, typeName(g))])))));
+    }
   }
   if (e.kind === 'story') {
     const mentioned = [...linkIds(e.body)].map((x) => state.entries.get(x)).filter(Boolean).sort(byName);

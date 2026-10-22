@@ -33,6 +33,9 @@ export function renderSettings(main) {
           if (f.type === 'color') {
             control = h('input', { type: 'color', class: 'in color-in', id, value: item[f.key] || '#888888' });
             control.addEventListener('input', () => { item[f.key] = control.value; save(); });
+          } else if (f.type === 'check') {
+            control = h('input', { type: 'checkbox', class: 'cb', id, checked: !!item[f.key] });
+            control.addEventListener('change', () => { item[f.key] = control.checked; save(); });
           } else if (f.type === 'number') {
             control = h('input', { type: 'number', class: 'in', id, value: String(item[f.key] ?? ''), step: 'any', min: '0', inputmode: 'decimal' });
             control.addEventListener('input', () => {
@@ -274,6 +277,20 @@ export function renderSettings(main) {
       minItems: 1,
       addLabel: 'Add place type',
       blockRemove: (x) => (x.id === 'village' ? 'Villages are built in. You can rename them, but not remove them.' : used((e) => e.placeType === x.id)),
+    })),
+    section('Lore categories', h('div', {},
+      h('p', { class: 'hint' }, 'Switch on Members for categories that people and creatures can join, like religions or slayer factions.'),
+      listEditor(S.loreCategories, [{ key: 'name', label: 'Category', placeholder: 'e.g. Religion' }, { key: 'members', label: 'Members', type: 'check', cls: 'narrow' }], {
+        newItem: () => ({ id: uid(), name: '', members: false }),
+        minItems: 1,
+        addLabel: 'Add category',
+        blockRemove: (x) => used((e) => e.kind === 'lore' && e.category === x.id),
+      }))),
+    section('Item types', listEditor(S.itemTypes, [{ key: 'name', label: 'Type of item', placeholder: 'e.g. Relic' }], {
+      newItem: () => ({ id: uid(), name: '' }),
+      minItems: 1,
+      addLabel: 'Add item type',
+      blockRemove: (x) => used((e) => e.kind === 'item' && e.itemType === x.id),
     })),
     section('Eras', h('div', {},
       h('p', { class: 'hint' }, 'In order, oldest first. History and stories use these.'),

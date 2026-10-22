@@ -363,6 +363,10 @@ dialog.sheet::backdrop { background: var(--scrim); }
   padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: transparent; cursor: pointer; text-align: left;
 }
 .choice:hover { background: var(--sunk); }
+.choice-groups { display: grid; gap: 14px; max-height: 58vh; overflow: auto; padding: 2px 0; }
+.choice-gt { font-size: 13.5px; font-weight: 700; color: var(--muted); margin: 0 0 6px; }
+.choice-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice.compact { width: auto; padding: 9px 15px; border-radius: 999px; }
 .choice-l { font-weight: 700; }
 .choice-h { color: var(--muted); font-size: 13.5px; }
 .menu { display: grid; }
@@ -390,6 +394,14 @@ dialog.sheet::backdrop { background: var(--scrim); }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 body.editing .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+.update-bar {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 65;
+  top: calc(var(--top-h) + env(safe-area-inset-top, 0px) + 10px);
+  width: max-content; max-width: calc(100vw - 32px);
+  display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2); font-weight: 700; font-size: 14.5px;
+}
 
 /* ---------- history ---------- */
 .lead-hint { font-size: 15px; margin: 2px 0 6px; max-width: 52ch; }
@@ -488,6 +500,7 @@ body.editing .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
 .le-row { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
 .le-cell { flex: 1 1 140px; display: grid; gap: 4px; min-width: 0; }
 .le-cell.narrow { flex: 0 0 88px; }
+.le-cell > .cb { width: 24px; height: 24px; margin: 11px 0; }
 .le-cell.grow { flex: 1 1 auto; }
 .le-l { font-size: 12.5px; font-weight: 700; color: var(--muted); }
 .le-btns { display: flex; gap: 2px; margin-left: auto; }

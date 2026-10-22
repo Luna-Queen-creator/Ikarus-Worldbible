@@ -65,6 +65,8 @@ export const ICON = {
   polygon: svg('<path d="M5 8l6-4 8 5-2 10H7z"/>'),
   hand: svg('<path d="M8 13V6.5a1.5 1.5 0 013 0V12M11 11V5a1.5 1.5 0 013 0v6M14 11V6.5a1.5 1.5 0 013 0V14c0 4-2.5 7-6 7s-4.5-1.5-6-4l-1.5-2.5a1.5 1.5 0 012.5-1.6L8 14"/>'),
   minus: svg('<path d="M5 12h14"/>'),
+  lore: svg('<path d="M8 8H5V6.5A2.5 2.5 0 017.5 4h9A2.5 2.5 0 0119 6.5V17"/><path d="M8 6.5V18a2.5 2.5 0 002.5 2.5h8a2 2 0 002-2V17H11v1.5"/><path d="M11 9h5M11 12.5h5"/>'),
+  item: svg('<path d="M4 4l2.8.4 9.4 9.4-2.4 2.4-9.4-9.4z"/><path d="M11.6 18.4l6.8-6.8M16.8 16.8L20.5 20.5"/>'),
 };
 
 export function iconEl(name, cls = 'ico') {
@@ -148,8 +150,11 @@ export function setPref(k, v) {
   try { localStorage.setItem('archive.' + k, v); } catch { /* storage may be blocked */ }
 }
 
+// Words that read wrong with an s on the end, like "Armors".
+const UNCOUNTABLE = /\b(kaiju|armou?r|gear|equipment|clothing|ammo|ammunition|technology|magic|lore|knowledge|food|money|music|art|wildlife|fauna|flora|other)$/i;
+
 export function plural(n) {
-  if (/kaiju$/i.test(n) || /s$/i.test(n) || /^other$/i.test(n)) return n;
+  if (UNCOUNTABLE.test(n) || /s$/i.test(n)) return n;
   if (/[^aeiou]y$/i.test(n)) return n.slice(0, -1) + 'ies';
   return n + 's';
 }

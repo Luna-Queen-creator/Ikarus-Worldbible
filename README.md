@@ -36,10 +36,15 @@ Open the link in Chrome or Samsung Internet, open the browser menu and choose
   Writing `#Name#` yourself works too. While editing, links look like `#Maximus#`; when you save,
   the hashes disappear and the name becomes a link. A `#Name#` that doesn't exist yet shows up dashed;
   tap it to create that entry.
+- **Lore tab:** everything that isn't a being, a place or an event. Under **Lore** go groups (like a religion
+  or a slayer faction), technology, concepts and whatever categories you add. Under **Items** go weapons,
+  armor, tools and so on. Groups can have members: open a character's edit page and pick the group under
+  **Member of**. Give an item an owner and it shows up as gear on that character's page.
 - **Author mode** (the eye at the top) shows hidden meters, secret notes, what really happened in history,
   and who is a Tamer. Turn it off to see the world the way its historians know it.
 - **Settings** lets you rename or add factions, types, kaiju classes, slayer ranks, families, elements,
-  sins, place types, eras and meters, including calculated meters like Dominance and Willpower.
+  sins, place types, lore categories, item types, eras and meters, including calculated meters like
+  Dominance and Willpower.
 - **Map:** upload any image as the base map. Public-domain world maps from Wikimedia Commons work well,
   or your own drawing.
 

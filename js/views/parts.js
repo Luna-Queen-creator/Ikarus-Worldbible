@@ -37,7 +37,7 @@ export function thumb(e, cls = 'thumb') {
     const c = byId(state.settings.classes, e.kclass);
     box.append(h('span', { class: 'ph gl', 'aria-hidden': 'true' }, c ? glyph(c) : '?'));
   } else if (e.kind !== 'being') {
-    const ic = { place: 'places', event: 'history', story: 'stories' }[e.kind];
+    const ic = { place: 'places', lore: 'lore', item: 'item', event: 'history', story: 'stories' }[e.kind];
     box.append(h('span', { class: 'ph ph-ic', 'aria-hidden': 'true', html: ICON[ic] || '' }));
   } else {
     box.append(h('span', { class: 'ph', 'aria-hidden': 'true' }, (e.name || '?').trim().charAt(0).toUpperCase() || '?'));
@@ -175,21 +175,38 @@ export async function createFromMissing(name) {
 export function newEntryChoices() {
   const S = state.settings;
   const out = [];
-  for (const f of S.factions) for (const t of f.types) out.push({ value: `#/new/being/${f.id}/${t.id}`, label: t.name, hint: f.name });
-  for (const pt of S.placeTypes) out.push({ value: `#/new/place/${pt.id}`, label: pt.name, hint: 'Place' });
-  out.push({ value: '#/new/event', label: 'Event', hint: 'History' });
+  for (const f of S.factions) for (const t of f.types) out.push({ value: `#/new/being/${f.id}/${t.id}`, label: t.name, group: f.name });
+  for (const pt of S.placeTypes) out.push({ value: `#/new/place/${pt.id}`, label: pt.name, group: 'Places' });
+  for (const c of S.loreCategories) out.push({ value: `#/new/lore/${c.id}`, label: c.name, group: 'Lore' });
+  for (const t of S.itemTypes) out.push({ value: `#/new/item/${t.id}`, label: t.name, group: 'Items' });
+  out.push({ value: '#/new/event', label: 'Event', group: 'History' });
   return out;
 }
 
+// Pick one option. Options with a group are shown as compact buttons under group headings.
 export function chooseSheet(title, text, options) {
-  return openSheet((close) => [
-    h('h2', { class: 'sheet-t' }, title),
-    text ? h('p', { class: 'sheet-p' }, text) : null,
-    h('div', { class: 'choices' }, options.map((o) => h('button', {
-      type: 'button', class: 'choice', onclick: () => close(o.value),
-    }, h('span', { class: 'choice-l' }, o.label), o.hint ? h('span', { class: 'choice-h' }, o.hint) : null))),
-    h('div', { class: 'sheet-actions' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => close(undefined) }, 'Cancel')),
-  ], { label: title });
+  const grouped = options.some((o) => o.group);
+  const button = (o, cls) => h('button', { type: 'button', class: cls, onclick: () => close(o.value) },
+    h('span', { class: 'choice-l' }, o.label), o.hint ? h('span', { class: 'choice-h' }, o.hint) : null);
+  let close;
+  return openSheet((done) => {
+    close = done;
+    let body;
+    if (grouped) {
+      const names = [...new Set(options.map((o) => o.group || ''))];
+      body = h('div', { class: 'choice-groups' }, names.map((g) => h('section', { class: 'choice-group' },
+        g ? h('h3', { class: 'choice-gt' }, g) : null,
+        h('div', { class: 'choice-wrap' }, options.filter((o) => (o.group || '') === g).map((o) => button(o, 'choice compact'))))));
+    } else {
+      body = h('div', { class: 'choices' }, options.map((o) => button(o, 'choice')));
+    }
+    return [
+      h('h2', { class: 'sheet-t' }, title),
+      text ? h('p', { class: 'sheet-p' }, text) : null,
+      body,
+      h('div', { class: 'sheet-actions' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => done(undefined) }, 'Cancel')),
+    ];
+  }, { label: title });
 }
 
 // <select> of every entry you can link to, grouped by faction, places and events.
@@ -206,15 +223,16 @@ export function entrySelect(id, value, { none = 'Nothing linked', exclude } = {}
   const all = [...state.entries.values()].filter((e) => e.id !== exclude);
   for (const f of S.factions) add(f.name, all.filter((e) => e.kind === 'being' && e.faction === f.id));
   add('Places', all.filter((e) => e.kind === 'place'));
+  add('Lore', all.filter((e) => e.kind === 'lore'));
+  add('Items', all.filter((e) => e.kind === 'item'));
   add('History', all.filter((e) => e.kind === 'event'));
   return sel;
 }
 
 export function noun(e) {
-  if (e.kind === 'being') return typeName(e);
-  if (e.kind === 'place') return typeName(e);
   if (e.kind === 'event') return 'event';
-  return 'story';
+  if (e.kind === 'story') return 'story';
+  return typeName(e);
 }
 
 export function pluralName(name) { return plural(name); }

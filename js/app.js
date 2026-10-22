@@ -6,6 +6,7 @@ import { renderFactions } from './views/factions.js';
 import { renderEntry } from './views/entry.js';
 import { renderEdit } from './views/edit.js';
 import { renderPlaces, renderHistory, renderStories } from './views/lists.js';
+import { renderLore } from './views/lore.js';
 import { renderVersus } from './views/versus.js';
 import { renderMap } from './views/map.js';
 import { renderSettings } from './views/settings.js';
@@ -16,7 +17,7 @@ const main = document.getElementById('main');
 const nav = document.getElementById('nav');
 const backBtn = document.getElementById('back');
 const authorBtn = document.getElementById('authorBtn');
-const SECTIONS = ['factions', 'places', 'history', 'stories', 'map'];
+const SECTIONS = ['factions', 'places', 'lore', 'history', 'stories', 'map'];
 let navCount = 0;
 let currentPath = '';
 const scrollMemory = new Map();
@@ -25,12 +26,13 @@ const routes = [
   [/^\/?$/, () => { location.replace('#/factions'); return false; }],
   [/^\/factions(?:\/([^/]+))?$/, (m) => renderFactions(main, { factionId: m[1] })],
   [/^\/places$/, () => renderPlaces(main)],
+  [/^\/lore(?:\/(topics|items))?$/, (m) => renderLore(main, { seg: m[1] })],
   [/^\/history$/, () => renderHistory(main)],
   [/^\/stories$/, () => renderStories(main)],
   [/^\/map$/, () => renderMap(main)],
   [/^\/e\/([^/]+)$/, (m) => renderEntry(main, { id: m[1] })],
   [/^\/edit\/([^/]+)$/, (m) => renderEdit(main, { id: m[1] })],
-  [/^\/new\/(being|place|event|story)(?:\/([^/]*))?(?:\/([^/]*))?$/, (m) => renderEdit(main, { kind: m[1], a: m[2], b: m[3] })],
+  [/^\/new\/(being|place|lore|item|event|story)(?:\/([^/]*))?(?:\/([^/]*))?$/, (m) => renderEdit(main, { kind: m[1], a: m[2], b: m[3] })],
   [/^\/versus(?:\/([^/]*))?(?:\/([^/]*))?$/, (m) => renderVersus(main, { a: m[1], b: m[2] })],
   [/^\/settings$/, () => renderSettings(main)],
   [/^\/backup$/, () => renderBackup(main)],
@@ -116,7 +118,7 @@ document.getElementById('menuBtn').addEventListener('click', () => {
       h('a', { href: '#/search', onclick: () => close() }, iconEl('search'), 'Search'),
       h('a', { href: '#/settings', onclick: () => close() }, iconEl('settings'), 'Settings'),
       h('a', { href: '#/backup', onclick: () => close() }, iconEl('download'), 'Backup and restore')),
-    h('p', { class: 'hint menu-foot' }, 'Your world lives on this device only. Version 1.0'),
+    h('p', { class: 'hint menu-foot' }, 'Your world lives on this device only. Version 1.1'),
   ], { label: 'Menu' });
 });
 
@@ -181,6 +183,13 @@ window.addEventListener('beforeunload', (ev) => {
   await render();
   setTimeout(() => { cleanupBlobs().catch(() => {}); }, 3000);
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    // A new version takes over in the background; offer a reload instead of switching mid-use.
+    let hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController) { hadController = true; return; }
+      document.getElementById('updateBar').hidden = false;
+    });
+    document.getElementById('updateBtn').addEventListener('click', () => location.reload());
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 })();
