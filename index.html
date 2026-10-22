@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Archive</title>
+  <meta name="description" content="A private archive for your kaiju world: factions, places, history, stories and a map.">
+  <meta name="theme-color" content="#F6F8F3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1A221C" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" crossorigin href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Saira+Stencil+One&display=swap">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="top">
+    <button class="ib back" id="back" type="button" aria-label="Back" data-icon="back" hidden></button>
+    <h1 class="top-title" id="title">Archive</h1>
+    <span class="author-flag" id="authorFlag" hidden>Author mode</span>
+    <div class="top-actions">
+      <a class="ib" href="#/search" aria-label="Search" data-icon="search"></a>
+      <button class="ib author-btn" id="authorBtn" type="button" aria-pressed="false" aria-label="Author mode" data-icon="eye"></button>
+      <button class="ib" id="menuBtn" type="button" aria-label="Menu" data-icon="menu"></button>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1"></main>
+
+  <nav class="nav" id="nav" aria-label="Sections">
+    <a href="#/factions" data-sec="factions" data-icon="factions"><span>Factions</span></a>
+    <a href="#/places" data-sec="places" data-icon="places"><span>Places</span></a>
+    <a href="#/history" data-sec="history" data-icon="history"><span>History</span></a>
+    <a href="#/stories" data-sec="stories" data-icon="stories"><span>Stories</span></a>
+    <a href="#/map" data-sec="map" data-icon="map"><span>Map</span></a>
+  </nav>
+
+  <div class="suggest" id="suggest" role="listbox" aria-label="Link suggestions" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="empty">Archive needs JavaScript to run.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
